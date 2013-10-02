@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Setting up your Raspberry Pi with openFrameworks</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="css/custom.css" rel="stylesheet">
+  </head>
+  <body>
+    <script src="js/underscore-min.js"></script>
+    <script src="js/jquery-2.0.3.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+	//alert("test");
+      var oses = ['ubuntu', 'mac', 'win']
+        , osNav
+
+      $(function() {
+        osNav = $('.nav')
+        oses.forEach(function(os) {
+          var osChoice = $('<li class="osChoice ' + os + '"><a href="?' + os + '">' + os + '</a></li>')
+            .appendTo(osNav)
+        })
+
+        var selectedOs = location.search.slice(1) || 'ubuntu'
+          , otherOses = _.difference(oses, [selectedOs])
+          , otherOsesCSS = _.map(otherOses, function(os) { return '.' + os }).join(',')
+        osNav.find('.osChoice').each(function(i, elem) {
+          if ($(elem).hasClass(selectedOs)) {
+            $(elem).addClass('active')
+            $('#accordion').find('.' + selectedOs).show()
+          } else {
+            $(elem).removeClass('active')
+            $('#accordion').find(otherOsesCSS).hide()
+          }
+        })
+
+      })
+    </script>
+
+    <div id="container">
+
+      <ul class="nav nav-pills">
+      </ul>
+
+      <div class="panel-group" id="accordion">
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step1">
+                <span class="stepIndex">1</span> Get a clean Raspbian image
+              </a>
+            </h2>
+          </div>
+          <div id="step1" class="panel-collapse collapse">
+            <div class="panel-body">
+              <p>First, download a clean <b>raspbian</b> image from the official RPI site <a href="http://www.raspberrypi.org/downloads">http://www.raspberrypi.org/downloads</a>. Then, unzip it.</p>
+            </div>
+          </div>
+        </div> <!-- END panel -->
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step2">
+                <span class="stepIndex">2</span> Start an emulator that will run this image
+              </a>
+            </h2>
+          </div>
+          <div id="step2" class="panel-collapse collapse">
+            <div class="panel-body">
+              <p>We need to customize the image we just downloaded, install programs and configure the system for our needs.</p>
+              <p>For this, no need to install the image on the Pi yet. By using a machine emulator, we can fake a Raspberry Pi on our laptop, install our image there, and do all the configuration we need. We'll use a machine emulator called <a href="http://www.qemu.org">QEMU</a>. You also need a RPI Linux kernel compiled for QEMU, which you can get <a href="http://xecdesign.com/downloads/linux-qemu/kernel-qemu">here</a>.</p>
+
+              <div class="win">
+                <p>To configure our RPi image on Windows, we will need the following:</p>
+                <ul>
+                  <li><a href="http://downloads.raspberrypi.org/raspbian_latest">Raspbian Linux</a> image file</li>
+                  <li><a href="http://xecdesign.com/downloads/linux-qemu/kernel-qemu">Linux kernel</a> for Qemu</li>
+                  <li><a href="http://lassauge.free.fr/qemu/release/Qemu-1.6.0-windows.zip">Qemu</a> or Quick Emulator software for Windows. </li>
+                </ul>
+                <p>Create a working directory, e.g. <strong>C:\qemu</strong>. Unzip the Raspbian zip file and place the contents of it in <strong>C:\qemu</strong>. Move the kernel-qemu file to the same location. Unzip <strong>Qemu-1.6.0-windows.zip</strong> to <strong>C:\qemu</strong> as well</p>
+
+                <p>We will need to create two .bat files in the <strong>C:\qemu</strong> directory:</p>
+                <ol>
+                <li><strong>rpi_setup.bat</strong> for setting up the image file so it can be emulated using Qemu;</li>
+                <li><strong>rpi_start.bat</strong> for emulating and doing the rest of the setup we need.</li>
+                </ol>
+                <p>Let's start with adding content to the <strong>rpi_setup.bat</strong> file. Add the following:</p>
+                <pre><code>qemu-system-armw -kernel kernel-qemu -cpu arm1176 -m 256 -M versatilepb -no-reboot -serial stdio -append "root=/dev/sda2 init=/bin/sh panic=1" -hda <strong>2013-09-25-wheezy-raspbian.img</strong></code></pre>
+                
+                <p>Note the <strong>2013-09-25-wheezy-raspbian.img</strong> part - change the filename to whatever your raspbian image file name is. Remember to save changes.</p>
+                
+                <p>Open the <strong>rpi_start.bat</strong> file. Add the same, except <strong>init=/bin/sh</strong>. It should look like this now:</p>
+
+                <pre><code>qemu-system-armw -kernel kernel-qemu -cpu arm1176 -m 256 -M versatilepb -no-reboot -serial stdio -append "root=/dev/sda2 panic=1" -hda 2013-09-25-wheezy-raspbian.img</code></pre>
+
+                <p>Save file and doubleclick on the <strong>rpi_setup.bat</strong>. A new window should open with a booting Linux system in it.</p>
+
+                <p>Note: if the emulator fails to run:</p>
+
+                <ol>
+                  <li>Check if the path to your Raspbian image file is correct;</li>
+                  <li>It might be necessary to add the <strong>C:\qemu</strong> location to Windows Path variable.</li>
+                </ol>
+
+                <p>Now you should see a plain and simple Linux shell in the emulator window. Execute these commands one by one there:</p>
+
+                <pre><code>mount / -o remount,rw
+echo > /etc/ld.so.preload
+mount / -o remount,ro
+exit</code></pre>
+                
+                <p>Enter these commands exactly as writen above or you will fail. The shell is very sensitive. This will remove all contents from the <strong>/etc/ld.so.preload</strong> file. Close the emulator window. Now the Raspbian .img file is ready to be booted.</p>
+
+                <p>Doubleclick the <strong>rpi_start.bat</strong> file. The Raspbian Linux should start. When fully booted, a config screen with blue background should be visible. Do the following:</p>
+
+                <ol>
+                  <li>Change password;</li>
+                  <li>Enable SSH;</li>
+                  <li>And maybe overclock a bit.</li>
+                </ol>
+
+                <p>Exit the config tool by selecting <strong>Finish</strong> (navigate by using the Tab key), later you will be able to access the tool by issuing the <strong>sudo raspi-config</strong> command.</p>
+
+                <p>If the system shuts down, click on the <strong>rpi_start.bat</strong> file again to restart the emulator.</p>
+
+              </div> <!-- Qemu WIN -->
+
+              <div class="ubuntu">
+                  <p>Now, do this to install QEMU:</p>
+                  <pre><code>sudo apt-get install qemu-system</code></pre>
+                  <p>Now, we need to launch it and run our image. First, execute:</p>
+                  <pre><code>file your-raspbian.img</code></pre>
+
+                  <p>From the output of this command, take the partition 2 'startsector' value and multiply by 512, and use this figure as the offset value in the mount command below.</p>
+                  <pre><code>sudo mount your-raspbian.img -o offset=62914560 /mnt
+nano /mnt/etc/ld.so.preload
+</code></pre>
+                  
+                  <p>Press Ctrl+X to save file and exit. Then unmount the image.</p>
+                  <pre><code>sudo umount your-raspbian.img</code></pre>
+
+                  <p>Make sure that you are in workshop working directory, then, you can start QEMU with your image:</p>
+                  <pre><code>qemu-system-arm -kernel your-linux-kernel -cpu arm1176 -m 256 -M versatilepb -no-reboot -serial stdio -append "root=/dev/sda2 panic=1" -hda your-raspbian.img -redir tcp:5022::22</code></pre>
+
+                  <p>If it says that running fsck failed, just run</p>
+                  <pre><code>fsck /dev/sda2</code></pre>
+                  <p>and restart the emulator when done.</p>
+
+                  <p>Because this is the first time we start the image on a machine, you will be prompted with a menu allowing you to configure some options. Don't forget to change your password, and to change the keyboard layout.</p>
+              </div> <!-- Qemu UBUNTU -->
+
+              <div class="mac">
+              <p>Download <a href="http://sourceforge.net/projects/osxfuse/files/">OSXFUSE</a>. When installing, check the Compatibility Layer with MACFUSE (old version of OSXFUSE) option.</p>
+
+              <p>Download <a href="http://sourceforge.net/projects/fuse-ext2/">FUSE-EXT2</a> binary. Install it and unmount the OSXFUSE and FUSE-EXT2 installation drives.</p>
+
+              <p>Edit the FUSE-EXT2 auto mount script for read-write mounting. Open <b>/System/Library/Filesystems/fuse-ext2.fs/fuse-ext2.util</b> and around line 207 (in function Mount ()) you will find the line</p>
+              <pre><code>OPTIONS="auto_xattr,defer_permissions"</code></pre>
+              <p>Change that line to:</p>
+              <pre><code>OPTIONS="auto_xattr,defer_permissions,rw+"</code></pre>
+              <p>Save file, restart Terminal and navigate to your RPi workshop directory. Run:</p>
+              <pre><code>sudo hdiutil mount your-rpi-image.img</code></pre>
+              <p>You should see something like this:</p>
+              <pre><code>/dev/disk1         FDisk_partition_scheme          
+/dev/disk1s1        Windows_FAT_32        /Volumes/boot
+/dev/disk1s2        Linux                 /Volumes/Untitled</code></pre>
+              <p>Navigate to the mounted Linux partition:</p>
+              <pre><code>cd /Volumes/Untitled</code></pre>
+              <p>Run:</p>
+              <pre><code>sudo nano etc/ld.so.preload</code></pre>
+              <p>Comment out the only line there so it looks like this:</p>
+              <pre><code>#/usr/lib/arm-linux-gnueabihf/libcofi_rpi.so</code></pre>
+              <p>Press Ctrl+X (Not Cmd+X) to save file and exit.</p>
+
+              <p>Before installing QEMU, make sure that you have <a href="http://www.macports.org">MACPORTS</a>. MACPORTS depend on XCode Command Line Tools that depend on XCode. To get XCode, go to <a href="https://developer.apple.com">Apple Developer</a> website or use App Store application. XCode Command Line tools are only available through Apple Developer website.</p>
+                <p>Now, do this to install QEMU:</p>
+
+                  <pre><code>sudo port install qemu +target_arm</code></pre>
+
+                 <p>Make sure that you are in workshop working directory, then, you can start QEMU with your image:</p>
+                  <pre><code>sudo qemu-system-arm -kernel your-linux-kernel -cpu arm1176 -m 256 -M versatilepb -no-reboot -serial stdio -append "root=/dev/sda2 panic=1" -hda your-raspbian.img -redir tcp:5022::22</code></pre>
+
+                  <p>Because this is the first time we start the image on a machine, you will be prompted with a menu allowing you to configure some options. Don't forget to change your password, and to change the keyboard layout.</p>
+              </div> <!-- Qemu MAC -->
+
+              
+
+              <p class="references">
+                References
+                <ul class="ubuntu">
+                  <li><a href="http://www.raspberrypi.org/phpBB3/viewtopic.php?f=29&t=37386">http://www.raspberrypi.org/phpBB3/viewtopic.php?f=29&t=37386</a></li>
+                  <li><a href="http://xecdesign.com/">http://xecdesign.com/</a></li>
+                </ul>
+
+                <ul class="mac">
+                  <li><a href="http://xecdesign.com/">http://xecdesign.com/</a></li>
+                  <li><a href="http://www.thewireframecommunity.com/node/174">http://www.thewireframecommunity.com/node/174</a></li>
+                </ul>
+
+                <ul class="win">
+                  <li><a href="http://xecdesign.com/">http://xecdesign.com/</a></li>
+                  <li><a href="http://techny.tumblr.com/post/36589722093/quick-guide-on-emulating-a-raspberry-pi-in-windows">http://techny.tumblr.com/post/36589722093/quick-guide-on-emulating-a-raspberry-pi-in-windows</a></li>
+                </ul>
+              </p>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step3">
+                <span class="stepIndex">3</span> Enable SSH connections
+              </a>
+            </h2>
+          </div>
+          <div id="step3" class="panel-collapse collapse">
+            <div class="panel-body">
+              <p>Running the Raspbian image on a virtual machine is fine for the configuration phase, but we also need to have an access to the system while it is running on the board. For this we will use SSH.</p>
+
+              <p>SSH is already enabled on the last Raspbian versions, but we need to make sure the SSH client is running when we boot the Pi. To do that, run the following command in the emulator :</p>
+
+              <pre><code>sudo update-rc.d ssh defaults</pre></code>
+
+              <p>Then, as we will connect directly the Pi to our computer through a network cable, we need to configure a network. We will assign our Pi a static IP address, so we can find it from our laptop. For this open the file <b>/etc/network/interfaces</b> in the nano text editor:</p>
+
+                <pre><code>sudo nano /etc/network/interfaces</code></pre>
+
+                <p>Replace the contents of it with the following:</p>
+
+                <pre><code>auto lo
+iface lo inet loopback
+auto eth0
+iface eth0 inet static
+
+address 192.168.0.210   # your IP  
+gateway 192.168.0.1     # IP of the Router
+netmask 255.255.255.0   # Network mask</code></pre>
+
+                <p>Press <strong>Ctrl+X</strong> to save and exit. The program will prompt you whether you want to save chenges - enter 'y' for 'yes' and hit Enter. Run the following command to shutdown:</p>
+
+                <pre><code>sudo halt</code></pre>
+
+              <p class="references">
+                References
+                <ul>
+                  <li><a href="http://cplus.about.com/od/raspberrypi/a/How-Do-I-Setup-Ssh-On-Raspberry-Pi.htm">http://cplus.about.com/od/raspberrypi/a/How-Do-I-Setup-Ssh-On-Raspberry-Pi.htm</a></li>
+                  <li><a href="http://elinux.org/RPi_Setting_up_a_static_IP_in_Debian">http://elinux.org/RPi_Setting_up_a_static_IP_in_Debian</a></li>
+                </ul>
+              </p>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step4">
+                <span class="stepIndex">4</span> Install the image to your SD card
+              </a>
+            </h2>
+          </div>
+          <div id="step4" class="panel-collapse collapse">
+            <div class="panel-body">
+
+              <div class="ubuntu">
+              <p>The first thing we need to do is format the SD card to FAT32 (beware, this will erase all your data). <span class="ubuntu">For this, just open the disk utilities, find your SD card there, remove all existing partitions, and create a new one. When this is done, eject the card from the reader.</span></p> 
+
+              <p>Now, you need to find the name of your SD card on your computer. But, don't insert the card yet and run :</p> 
+              <pre><code>df -h</code></pre>
+
+              <p>Now insert the card and run the same command. The new partitions appearing in the list correspond to your SD Card. Unmount all these partitions using the <b><span class="ubuntu">umount</span><span class="mac">diskutil unmount</span></b> command</p>
+
+              <p>Finally, let's install the image to the SD card. Now be very careful. You need to input the right device name or you might lose all the data on your computer (no joke).</p>
+              <pre><code>dd bs=1m if=your-raspbian.img of=/dev/your-device-name</code></pre>
+              <p>This should take a couple of minutes, so be patient even if nothing seems to happen.</p>
+              </div><!-- SD Setup UBUNTU -->
+
+              <div class="mac">
+                <p>Use <a href="https://www.sdcard.org/downloads/formatter_4">SDFormatter</a> to format the SD card. Select the <strong>Overwrite Format</strong> option before pressing <strong>Format</strong>.</p>
+
+                <p>Open Terminal, navigate to your working directory by using the <strong>cd</strong> command and run the following command:</p>
+
+                <pre><code>diskutil list</code></pre>
+
+                <p>You should see something like this:</p>
+
+                <pre><code>/dev/disk0
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *256.1 GB   disk0
+   1:                        EFI                         209.7 MB   disk0s1
+   2:                  Apple_HFS Macintosh HD            255.2 GB   disk0s2
+   3:                 Apple_Boot Recovery HD             650.0 MB   disk0s3
+/dev/disk1
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:     FDisk_partition_scheme                        *7.9 GB     disk1
+   1:             Windows_FAT_32 boot                    58.7 MB    disk1s1</code></pre>
+
+                <p>We are interested in the <strong>/dev/disk1</strong> part - unmount it by unmounting it's partition. Enter this command in the Terminal window:</p>
+
+                <pre><code>diskutil unmount /dev/disk1s1</code></pre>
+
+                <p>Now the SD card is ready, remember the device path <strong>/dev/disk1</strong> - you will need to add an 'r' before the disk1 part - it should increase the writing speed. Run the following command, <strong style="color:red;">but be careful</strong> as you can overwrite the whole contents of your hard drive just by missing out some letters:</p>
+
+                <pre><code>dd bs=1m if=<strong>your-raspbian.img</strong> of=/dev/rdisk1</code></pre>
+
+                <p>Note: replace the <strong>your-raspbian.img</strong> part with the actual name of your image file.</p>
+
+                <p>Now wait. It can take a couple of minutes for the computer to finish the task. Yes - there is no indicator that shows the progress, but you can open Activity Monitor to see that there is something happening if you start becomming inpatient.</p>
+
+                <p>When the installing is finished, place the SD card in your Raspberry Pi and start it up.</p>
+              </div><!-- SD Setup MAC -->
+
+              <div class="win">
+                <p>Now the image should be ready for burning on the SD card. To do that use <a href="https://www.sdcard.org/downloads/formatter_3/eula_windows">SDFormatter</a> to format the SD card and <a href="http://sourceforge.net/projects/win32diskimager/">Win32DiskImager</a> to burn the image file on to the SD card.</p>
+
+                <p>Note that you have to select the <strong>ON</strong> option in the Format Size Adjustment select box in the <strong>SDFormatter</strong> application options before you do the formatting. Be careful with selecting the correct drive letter as well.</p>
+
+                <p>The <strong>WinDiskImager</strong> application should be self-explainatory. Just select the Raspbian image file and the SD card drive and press <strong>Write</strong></p>
+              </div> <!-- SD Setup WIN -->
+
+              <p class="references ubuntu">
+                Reference
+
+                <a href="http://elinux.org/RPi_Easy_SD_Card_Setup">http://elinux.org/RPi_Easy_SD_Card_Setup</a>
+              </p>
+
+              <p class="references mac">
+                Reference
+
+                <a href="http://www.raspberrypi.org">http://www.raspberrypi.org</a>
+              </p>
+
+              <p class="references win">
+                Reference
+
+                <a href="http://www.raspberrypi.org">http://www.raspberrypi.org</a>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step5">
+                <span class="stepIndex">5</span> Connect to your Raspberry Pi
+              </a>
+            </h2>
+          </div>
+          <div id="step5" class="panel-collapse collapse">
+            <div class="panel-body">
+              <p>Insert the SD card into the SD card slot of the Raspberry Pi, connect it to the local with an ethernet wire and power it up by connecting the power cable.</p>
+
+              <div class="ubuntu">
+                <p>We will need to do two things remotely:</p>
+                <ol>
+                  <li>Run commands on the Raspberry Pi;</li>
+                  <li>Upload files.</li>
+                </ol>
+
+                <p>To run commands we will need to establish a SSH (Secure Shell) connection between our desktop computer and the Raspberry Pi. To do that, open Terminal and execute the following command:</p>
+
+                <pre><code>ssh pi@<strong>192.168.0.201</strong></code></pre>
+
+                <p>Please note that you have to replace the <strong>192.168.0.201</strong> with the IP address of your Raspberry Pi.</p>
+
+                <!-- To Seb: replace this with your weapon of choice -->
+                <p>We will use <a href="https://filezilla-project.org/download.php">FileZilla</a> for uploading files. Download and install it. When creating a new connection, you should specify <b>SFTP</b> as the Protocol.</p>
+              </div> <!-- SSH ubuntu -->
+
+              <div class="mac">
+                <p>We will need to do two things remotely:</p>
+                <ol>
+                  <li>Run commands on the Raspberry Pi;</li>
+                  <li>Upload files.</li>
+                </ol>
+
+                <p>To run commands we will need to establish a SSH (Secure Shell) connection between our desktop computer and the Raspberry Pi. To do that, open Terminal and execute the following command:</p>
+
+                <pre><code>ssh pi@<strong>192.168.0.201</strong></code></pre>
+
+                <p>Please note that you have to replace the <strong>192.168.0.201</strong> with the IP address of your Raspberry Pi.</p>
+
+                <p>We will use <a href="https://filezilla-project.org/download.php">FileZilla</a> for uploading files. Download and install it. When creating a new connection, you should specify <b>SFTP</b> as the Protocol.</p>
+              </div> <!-- SSH mac -->
+
+              <div class="win">
+                <p>We will need to do two things remotely:</p>
+                <ol>
+                  <li>Run commands on the Raspberry Pi;</li>
+                  <li>Upload files.</li>
+                </ol>
+                
+                <p>To run commands we will need to establish a SSH (Secure Shell) connection between our desktop computer and the Raspberry Pi. Download <a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html">PuTTY</a> for Windows for doing that.</p>
+
+                <p>To upload files we will use a tool that supports the SCP file transfer protocol. In the case of Windows there is <a href="http://winscp.net/eng/download.php">WinSCP</a>.</p>
+
+                <p>In both programs you will need to enter the IP address of the Raspberry Pi, it's username (most probably it is 'pi') and password (if you have not changed it in the previous steps, it might be 'raspberry').</p>
+              </div> <!-- SSH win -->
+  
+            </div>
+          </div>
+        </div><!-- END panel -->
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step6">
+                <span class="stepIndex">6</span> Update and Upgrade
+              </a>
+            </h2>
+          </div>
+          <div id="step6" class="panel-collapse collapse">
+            <div class="panel-body">
+              
+              <p>When you have successfuly connected to your Pi the first time, you should run the config tool and expand the filesystem: </p>
+
+              <pre><code>sudo raspi-config</code></pre>
+
+              <p>Select the Expand Filesystem option. Go to Advanced Options and Select the Memory Split option. Type <b>128</b> and Hit <b>Ok</b>.</p>
+
+              <p>When done, select finish (by using Tab key on your keyboard and select <b>Yes</b> when prompted to reboot). The Pi will reboot and you will have to reconnect through SSH again.</p>
+
+              <p>Next - you should update and upgrade it. To do that, run the following commands:</p>
+
+              <pre><code>sudo apt-get clean
+sudo apt-get update
+sudo apt-get upgrade</code></pre>
+
+              <p>The updating and upgrading process will take some time so be patient.</p>
+
+              <p class="references">
+                Reference <a href="http://www.openframeworks.cc/setup/raspberrypi/Raspberry-Pi-Getting-Started.html">http://www.openframeworks.cc/setup/raspberrypi/Raspberry-Pi-Getting-Started.html</a>
+              </p>
+
+            </div>
+          </div>
+        </div> <!-- END panel -->
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step7">
+                <span class="stepIndex">7</span> Download openFrameworks
+              </a>
+            </h2>
+          </div>
+          <div id="step7" class="panel-collapse collapse">
+            <div class="panel-body">
+              
+              <p>We need the Linux armv6 verson of openFrameworks. With the following commands we will download and uncompress it into the folder <b>/home/pi/openFrameworks</b></p>
+
+              <pre><code>cd ~
+wget http://www.openframeworks.cc/versions/v0.8.0/of_v0.8.0_linuxarmv6l_release.tar.gz
+mkdir openFrameworks
+tar vxfz of_v0.8.0_linuxarmv6l_release.tar.gz -C openFrameworks --strip-components 1</code></pre>
+
+              <p class="references">
+                Reference <a href="http://www.openframeworks.cc/setup/raspberrypi/Raspberry-Pi-Getting-Started.html">http://www.openframeworks.cc/setup/raspberrypi/Raspberry-Pi-Getting-Started.html</a>
+              </p>
+
+            </div>
+          </div>
+        </div> <!-- END panel -->
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step8">
+                <span class="stepIndex">8</span> Setup and compile openFrameworks
+              </a>
+            </h2>
+          </div>
+          <div id="step8" class="panel-collapse collapse">
+            <div class="panel-body">
+              
+              <p>We need to make sure that we have all necessary packages to compile openFrameworks. To do that, run these commands:</p>
+
+
+              <pre><code>cd /home/pi/openFrameworks/scripts/linux/debian_armv6l
+sudo ./install_dependencies.sh</code></pre>
+
+              <p>This will take some time, but when ready, run the following command to start compiling openFrameworks itself:</p>
+
+              <pre><code>make Release -C /home/pi/openFrameworks/libs/openFrameworksCompiled/project</code></pre>
+
+              <p>The compiling process should take about an hour. It is possible that you encounter an error containing:</p>
+
+              <pre><code>../../../libs/openFrameworks/app/ofAppEGLWindow.cpp:1073:66: error: cannot convert 'VC_IMAGE_TRANSFORM_T' to 'DISPMANX_TRANSFORM_T'</code></pre>
+
+              <p>To solve that, run this:</p>
+
+              <pre><code>sed -i 's/VC_IMAGE_TRANSFORM_T/DISPMANX_TRANSFORM_T/g' /home/pi/openFrameworks/libs/openFrameworks/app/ofAppEGLWindow.cpp</code></pre>
+
+              <p>Run the <b>make</b> command again if necessary.</p>
+
+              <p>When complete, navigate to the <b>/home/pi/openFrameworks/examples</b> directory to see the available examples there. Choose one, e.g. polygonExample, enter it's directory by using <b>cd polygonExample</b> and execute the followig:</p>
+
+              <pre><code>make
+make run</code></pre>
+
+              <p>The <b>make</b> command will compile the project, the <b>make run</b> - execute it. A screen should be connected to the RPi to see the output.</p>
+
+              <p class="references">
+                Reference <a href="http://www.openframeworks.cc/setup/raspberrypi/Raspberry-Pi-Getting-Started.html">http://www.openframeworks.cc/setup/raspberrypi/Raspberry-Pi-Getting-Started.html</a>
+              </p>
+
+            </div>
+          </div>
+        </div> <!-- END panel -->
+
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step9">
+                <span class="stepIndex">9</span> openFrameworks desktop Setup
+              </a>
+            </h2>
+          </div>
+          <div id="step9" class="panel-collapse collapse">
+            <div class="panel-body">
+              
+              <p>While openFrameworks is compiling on the Raspberry Pi, make sure that your desktop computer installation of openFrameworks works as expected as we will use our desktop machines for developing and testing our apps mainly.</p>
+
+              <div class="mac">
+                <p>To use openFrameworks on Mac OSX, you have to make sure that you have XCode installed. If not, open the App Store application and search for XCode there or go to <a href="https://developer.apple.com">Apple Developer</a> web site, log in and download XCode from there.</p>
+
+                <p>Download <a href="http://www.openframeworks.cc/download/">openFrameworks</a> 0.8.0 for Mac OSX.</p>
+              </div> <!-- OF Desktop MAC -->
+              
+              <div class="win">
+                <p>To use openFrameworks on Windows, you have to set up a development environment. We will install <a href="http://www.codeblocks.org/downloads/binaries">CodeBlocks</a> (with MinGW), but if you have a Microsoft Visual Studio licence, you can use it as well.</p>
+
+                <p>You will also need <a href="http://www.openframeworks.cc/content/files/codeblocks_additions.zip">Additions to CodeBlocks to work with openFrameworks</a>. You will need to add files to your CodeBlocks installation <b>include</b> and <b>lib</b> directories.</p>
+
+                <p>Download <a href="http://www.openframeworks.cc/download/">openFrameworks</a> 0.8.0 for Windows.</p>
+
+                <p>Unzip it to as safe location and go to <b>libs/openFrameworksCompiled/project/win_cb</b> directory and open the <b>openFrameworks.cbp</b> file. It should open in the CodeBlocks environment. Press the <b>Build</b> button. Do it for both - <b>debug</b> and <b>release</b> - targets</p>
+
+                <p>To test the openFrameworks installation, try to open and compile one of the example projects in the <b>openFrameworks/examples</b> directory. Open the <b>.workspace</b> project file, choose target in the CodeBlocks IDE and press <b>Build and Run.</b></p>
+
+
+              </div> <!-- OF Desktop WIN -->
+              
+
+              <p class="references">
+                Reference <a href="http://www.openframeworks.cc/">http://www.openframeworks.cc</a>
+              </p>
+
+
+            </div>
+          </div>
+        </div> <!-- END panel -->
+
+      </div>
+
+    </div>
+
+  </body>
+</html>
+
