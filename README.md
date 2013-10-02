@@ -1,1 +1,1 @@
-[Instructions here](http://sebpiq.github.io/rpi-workshop-instructions/index.html)
+[Instructions here](http://kr15h.github.io/rpi-of-workshop/index.html)
