@@ -1,4 +1,4 @@
-Raspberry Pi and openFrameworks Workshop
+RPi + openFrameworks Workshop
 ========================================
 
 Raspberry Pi and openFrameworks workshop files.
