@@ -558,6 +558,57 @@ make run</code></pre>
           </div>
         </div> <!-- END panel -->
 
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h2 class="panel-title">
+              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#step10">
+                <span class="stepIndex">10</span> Auto-login and Auto-start
+              </a>
+            </h2>
+          </div>
+          <div id="step10" class="panel-collapse collapse">
+            <div class="panel-body">
+              <h3>Auto-login the pi user</h3>
+              <p>Run</p>
+              <pre><code>sudo nano /etc/inittab</code></pre>
+
+              <p>Comment the line starting the terminal tty1 ("1:2345:respawn:/sbin/getty 115200 tty1"), and just bellow it add :</p>
+              <pre><code>1:2345:respawn:/bin/login -f pi tty1 </dev/tty1 >/dev/tty1 2>&1</pre></code>
+
+              <h3>Starting a program on boot</h3>
+              <p>In <b>/home/pi</b> create an executable shell script called <b>startup.sh</b> :</p>
+              <pre><code>touch startup.sh
+chmod a+x startup.sh</code></pre>
+
+              <p>Then open <b>.bashrc</b> and add the following line at the end of the file :</p>
+              <pre><code>~/startup.sh</pre></code>
+              
+              <p>Now whatever commands are in <b>startup.sh</b> are exectued on boot of the system. We want to run our programm, so open <b>startup.sh</b> and add the following inside : </p>
+              <pre><code>#!/bin/bash
+/home/pi/openFrameworks/apps/myApps/blankExample/bin/blankExample</code></pre>
+
+              <p>Remember to change the <b>blankExample</b> with the app that you have made.</p>
+
+              <p>There is another way using crontab. Execute this command to open the crontab editing mode:</p>
+
+              <pre><code>sudo crontab -e</code></pre>
+
+              <p>At the bottom of the file add this:</p>
+
+              <pre><code>@reboot /home/pi/openFrameworks/apps/myApps/blankExample/bin/blankExample</code></pre>
+
+              <p>Again - remember to replace the <b>blankExample</b> part with path to your application. Don't do both ways, as it will start your programm twice and it will eat RPi resources twice as bad.</p>
+
+              <p>Now to test that this works, reboot your Pi by running :</p>
+              <pre><code>sudo reboot</code></pre>
+
+              <p class="references">
+                Reference <a href="http://elinux.org/RPi_Debian_Auto_Login">http://elinux.org/RPi_Debian_Auto_Login</a>
+              </p>
+            </div>
+          </div>
+        </div><!-- END panel -->
+
       </div>
 
     </div>
